@@ -60,14 +60,18 @@ async function register(req, res, next) {
     }
 
     // Send welcome SMS if configured
-    const welcomeMsg = `Welcome to MediCare Hospital, ${full_name}! Your patient account has been created. Book appointments and manage healthcare conveniently.`;
-    await twilioService.sendSMS({
-      to: formattedPhone,
-      message: welcomeMsg,
-      triggerEvent: 'system',
-      userId,
-      recipientName: full_name
-    });
+    try {
+      const welcomeMsg = `Welcome to MediCare Hospital, ${full_name}! Your patient account has been created. Book appointments and manage healthcare conveniently.`;
+      await twilioService.sendSMS({
+        to: formattedPhone,
+        message: welcomeMsg,
+        triggerEvent: 'system',
+        userId,
+        recipientName: full_name
+      });
+    } catch (smsErr) {
+      console.warn('Welcome SMS could not be sent (non-fatal):', smsErr.message);
+    }
 
     const user = db.prepare('SELECT id, email, role, full_name, phone_number, is_phone_verified FROM users WHERE id = ?').get(userId);
     const token = generateToken(user);

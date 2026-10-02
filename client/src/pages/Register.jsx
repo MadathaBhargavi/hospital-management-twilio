@@ -26,9 +26,24 @@ export default function Register({ onSwitchToLogin }) {
     setLoading(true);
     setError(null);
 
+    const full_name = formData.full_name?.trim();
+    const email = formData.email?.trim();
+    const phone_number = formData.phone_number?.trim();
+    const password = formData.password?.trim();
+
+    if (!full_name || !email || !phone_number || !password) {
+      setError('Please fill in all required fields (Full Name, Email, Phone Number, and Password).');
+      setLoading(false);
+      return;
+    }
+
     try {
       await register({
         ...formData,
+        full_name,
+        email,
+        phone_number,
+        password,
         role: 'patient'
       });
     } catch (err) {

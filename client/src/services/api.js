@@ -1,4 +1,19 @@
-const API_BASE = '/api';
+// Dynamic API base URL configuration:
+// - Uses VITE_API_URL if defined (e.g., in Render environment variables or .env)
+// - Falls back to deployed Render backend URL in production
+// - Uses relative '/api' path in local development to leverage Vite dev proxy
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_URL) {
+    const custom = import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+    return custom.endsWith('/api') ? custom : `${custom}/api`;
+  }
+  if (import.meta.env.PROD || import.meta.env.MODE === 'production') {
+    return 'https://hospital-management-twilio.onrender.com/api';
+  }
+  return '/api';
+};
+
+const API_BASE = getApiBase();
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('medicare_token');
@@ -12,15 +27,27 @@ async function request(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers
+    });
+  } catch (netErr) {
+    throw new Error(`Unable to connect to server at ${API_BASE}. Please ensure the backend is running and online.`);
+  }
 
-  const data = await response.json().catch(() => ({}));
+  let data = {};
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    data = await response.json().catch(() => ({}));
+  } else {
+    const rawText = await response.text().catch(() => '');
+    data = { message: rawText || `Server returned HTTP ${response.status} (${response.statusText})` };
+  }
 
   if (!response.ok) {
-    const error = new Error(data.message || 'An error occurred during request.');
+    const error = new Error(data.message || `Request failed with status ${response.status}`);
     error.status = response.status;
     error.data = data;
     throw error;

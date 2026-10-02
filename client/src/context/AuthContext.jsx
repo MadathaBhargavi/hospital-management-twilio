@@ -30,20 +30,24 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const res = await api.login({ email, password });
-    if (res.success) {
+    if (res && res.success) {
       localStorage.setItem('medicare_token', res.token);
       setToken(res.token);
       setUser(res.user);
+    } else {
+      throw new Error(res?.message || 'Login failed. Please check your credentials.');
     }
     return res;
   };
 
   const register = async (userData) => {
     const res = await api.register(userData);
-    if (res.success) {
+    if (res && res.success) {
       localStorage.setItem('medicare_token', res.token);
       setToken(res.token);
       setUser(res.user);
+    } else {
+      throw new Error(res?.message || 'Registration failed. Please check your details.');
     }
     return res;
   };

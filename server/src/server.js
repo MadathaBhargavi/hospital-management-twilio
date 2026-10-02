@@ -15,10 +15,41 @@ const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 
+// Allowed Origins for CORS
+const allowedOrigins = [
+  'https://hospital-management-twilio-1.onrender.com',
+  'https://hospital-management-twilio.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
+  ...(config.CLIENT_URL ? [config.CLIENT_URL.replace(/\/+$/, '')] : [])
+];
+
 // Middlewares
 app.use(cors({
-  origin: '*',
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow non-browser requests (mobile apps, server-to-server, curl)
+    if (!origin) return callback(null, true);
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      /^https:\/\/hospital-management-twilio.*\.onrender\.com$/.test(origin) ||
+      /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+      /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+
+    if (isAllowed) {
+      return callback(null, true);
+    }
+
+    // Default fallback to allow access
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
